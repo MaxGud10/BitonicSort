@@ -1,42 +1,76 @@
-#include <bits/stdc++.h>
+#include "bitonic_sort.h"
 
+#include <algorithm>
+#include <chrono>
+#include <iostream>
+#include <random>
+#include <ranges>
+#include <vector>
 
-void bitonicSort(std::vector<int> &a, bool dir);
-
-int main ()
+int main()
+try
 {
-    std::vector<int> a = {3, 7, 4, 8, 6, 2, 1, 5};
-    
-    bitonicSort(a, true);
+    size_t N{};
 
-    for (int x : a)
-        std::cout << x << " ";
-    std::cout << "\n";
-    
+    std::cin >> N;
+
+    if (bitonic::utils::cinFailed())
+        return -1;
+
+    if (!N)
         return 0;
-}
 
-void bitonicSort(std::vector<int> &a, bool dir)
-{
-    int n = (int)a.size();
+    std::vector<int> vec;
+    vec.reserve(N);
 
-    for (int k = 2; k <= n; k <<= 1)
+    for ([[maybe_unused]] auto _ : std::views::iota(size_t(0), N))
     {
-        for (int j = k >> 1; j > 0; j >>= 1)
-        {
-            for (int i = 0; i < n; i++)
-            {
-                int ixj = i ^ j;
-                if (ixj > i)
-                {
-                    bool ascending = ((i & k) == 0) ? dir : !dir;
+        int elem{};
 
-                    if (ascending)
-                        if (a[i] > a[ixj]) std::swap(a[i], a[ixj]);                 
-                    else 
-                        if (a[i] < a[ixj]) std::swap(a[i], a[ixj]);
-                }
-            }
-        }
+        std::cin >> elem;
+        if (bitonic::utils::cinFailed())
+            return -1;
+
+        vec.push_back(elem);
     }
+
+#ifdef ENABLE_LOGGING
+    std::cout << "Initial data:\n";
+    bitonic::utils::dump(vec);
+#endif
+
+#ifdef SORT_ON_CPU
+    std::vector<int> vec_copy(vec);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    std::sort(vec_copy.begin(), vec_copy.end());
+    auto end   = std::chrono::high_resolution_clock::now();
+
+    [[maybe_unused]] auto duration = end - start;
+
+#ifdef PRINT_DURATION
+    std::cout << "CPU Duration: " << duration.count() << " nanosec\n";
+#endif // PRINT_DURATION
+
+#endif // SORT_ON_CPU
+
+    bitonic::OclApp app;
+
+    app.bsort(vec, /* incr_order = */ true);
+
+    MSG("Sorted data:\n");
+
+    bitonic::utils::dump(vec);
+
+    return 0;
+}
+catch (cl::Error &err)
+{
+    std::cerr << "OpenCL error: " << err.err() << ": " << err.what() << '\n';
+    return -1;
+}
+catch (std::exception &err)
+{
+    std::cerr << "exception: " << err.what() << '\n';
+    return -1;
 }
