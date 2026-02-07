@@ -85,6 +85,10 @@ add_executable(unit_tests
 	main.cpp
 )
 
+target_compile_definitions(unit_tests PRIVATE
+    BITONIC_KERNEL_PATH="${CMAKE_BINARY_DIR}/bitonic_sort.cl"
+)
+
 target_compile_options(unit_tests PRIVATE
     $<$<CONFIG:Debug>:${DEBUG_COMPILE_OPTIONS}>
     $<$<CONFIG:Release>:${RELEASE_COMPILE_OPTIONS}>
@@ -114,6 +118,10 @@ target_include_directories(unit_tests PRIVATE
 
 if(ENABLE_BD_TESTS)
     target_compile_definitions(unit_tests PRIVATE ENABLE_BD_TESTS)
+endif()
+
+if(BS_BIGTESTS)
+    target_compile_definitions(unit_tests PRIVATE BS_BIGTESTS)
 endif()
 
 enable_testing()

@@ -11,39 +11,28 @@ find_package(OpenCLHeaders CONFIG REQUIRED)
 
 enable_testing()
 
-option(ENABLE_LOGGING "Enable logging" OFF)
-set(ENABLE_LOGGING ${ENABLE_LOGGING} CACHE BOOL "Enable logging" FORCE)
+option(BS_LOG             "Enable logging" OFF)
+option(BS_PRINT_DURATION  "Print kernel duration" OFF)
+option(BS_CPU             "Enable CPU reference/fallback" OFF)
+option(BS_BIGTESTS        "Enable large/slow tests" OFF)
+option(BS_DUMP            "Enable debug dumps" OFF)
 
-option(PRINT_DURATION "Enable logging" OFF)
-set(PRINT_DURATION ${PRINT_DURATION} CACHE BOOL "Print duration" FORCE)
 
-option(SORT_ON_CPU "Sort on CPU" OFF)
-set(SORT_ON_CPU ${SORT_ON_CPU} CACHE BOOL "Sort on CPU" FORCE)
-
-option(ENABLE_BD_TESTS "Enables big data tests" OFF)
-set(ENABLE_BD_TESTS ${ENABLE_BD_TESTS} CACHE BOOL "Enables big data tests" FORCE)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Build type")
 add_subdirectory(unit_tests/)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+configure_file(${CMAKE_SOURCE_DIR}/kernels/bitonic_sort.cl
+               ${CMAKE_BINARY_DIR}/bitonic_sort.cl
+               COPYONLY)
 
-file(COPY ${CMAKE_SOURCE_DIR}/kernels/bitonic_sort.cl DESTINATION ${CMAKE_BINARY_DIR})
 
 if(MSVC)
-    set(RELEASE_COMPILE_OPTIONS
-        /O2
-        /W4
-        /DNDEBUG
-    )
+    set(RELEASE_COMPILE_OPTIONS /O2 /W4 /DNDEBUG)
+    set(DEBUG_COMPILE_OPTIONS   /Od /RTC1 /W4 /D_DEBUG)
 
-    set(DEBUG_COMPILE_OPTIONS
-        /Od
-        /RTC1
-        /W4
-        /D_DEBUG
-    )
 else()
     set(RELEASE_COMPILE_OPTIONS
         -O2
@@ -109,21 +98,19 @@ else()
         -Wlarger-than=8192
         -fPIE
         -Werror=vla
-        # -Wno-pre-c++17-compat
-        # -Wno-pre-c++20-compat
-        # -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,integer-divide-by-zero,nonnull-attribute,null,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
+        -Wno-pre-c++17-compat
+        -Wno-pre-c++20-compat
+        -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,integer-divide-by-zero,nonnull-attribute,null,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
     )
 endif()
 
+add_executable(bitonic_sort
+    src/main.cpp
+)
 
-# ----- executable -----
-
-add_executable(bitonic_sort ./main.cpp)
 target_include_directories(bitonic_sort PRIVATE
 	${CMAKE_SOURCE_DIR}/include
-	${CMAKE_SOURCE_DIR}/include/detail
 	${CMAKE_SOURCE_DIR}/utils
-	${CMAKE_SOURCE_DIR}/RB_Tree/include
 )
 
 target_link_libraries(bitonic_sort PRIVATE
@@ -132,18 +119,24 @@ target_link_libraries(bitonic_sort PRIVATE
     OpenCL::Headers
 )
 
+target_compile_definitions(bitonic_sort PRIVATE
+    BITONIC_KERNEL_PATH="${CMAKE_BINARY_DIR}/bitonic_sort.cl"
+)
 
-
-if(ENABLE_LOGGING)
-	target_compile_definitions(bitonic_sort PRIVATE ENABLE_LOGGING)
+if(BS_LOG)
+    target_compile_definitions(bitonic_sort PRIVATE BS_LOG)
 endif()
 
-if(SORT_ON_CPU)
-	target_compile_definitions(bitonic_sort PRIVATE SORT_ON_CPU)
+if(BS_CPU)
+    target_compile_definitions(bitonic_sort PRIVATE BS_CPU)
 endif()
 
-if(PRINT_DURATION)
-	target_compile_definitions(bitonic_sort PRIVATE PRINT_DURATION)
+if(BS_PRINT_DURATION)
+    target_compile_definitions(bitonic_sort PRIVATE BS_PRINT_DURATION)
+endif()
+
+if(BS_DUMP)
+    target_compile_definitions(bitonic_sort PRIVATE BS_DUMP)
 endif()
 
 target_compile_options(bitonic_sort PRIVATE

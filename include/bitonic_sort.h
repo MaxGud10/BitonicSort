@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <algorithm>
 #include <cmath>
@@ -19,35 +19,18 @@
 #define CL_HPP_TARGET_OPENCL_VERSION 120
 #endif
 
-#define CL_HPP_CL_1_2_DEFAULT_BUILD
 #define CL_HPP_ENABLE_EXCEPTIONS
 
-#ifndef CL_MAKE_VERSION
-#define CL_MAKE_VERSION(major, minor, patch) (((major) << 22) | ((minor) << 12) | (patch))
-#endif
-
-#ifdef CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION
-#undef CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION
-#define CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION 0
-#endif
-
-#ifdef CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_VERSION
-#undef CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_VERSION
-#define CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_VERSION 0
-#endif
-
-#ifdef CL_KHR_COMMAND_BUFFER_VERSION
-#undef CL_KHR_COMMAND_BUFFER_VERSION
-#define CL_KHR_COMMAND_BUFFER_VERSION 0
-#endif
-
+// TODO: написать CI
+// TODO: написать README
+// TODO: написать dump
+// TODO: разбить тесты на .ans and .dat
 
 #include <CL/opencl.hpp>
 
 namespace bitonic
 {
-constexpr size_t LOCAL_SIZE = 0;
- 
+
 class OclApp
 {
 private:
@@ -55,23 +38,25 @@ private:
     cl::Platform     platform_;
     cl::Context      context_;
     cl::CommandQueue queue_;
-    cl::Program      prog_;
+    //cl::Program      prog_;
 
     cl::Kernel global_bmerge_;
     cl::Kernel local_bsort;
 
     size_t work_gr_sz_{};
 
-    using bsort_t = cl::KernelFunctor<cl::Buffer, int>;
-    
-    void execute_kernel (cl::Kernel kernal, size_t global_size, 
-                         size_t local_size, std::vector<cl::Event> &events)
+    //using bsort_t = cl::KernelFunctor<cl::Buffer, int>;
+
+    void execute_kernel (const cl::Kernel &kernel,     size_t                 global_size,
+                               size_t     local_size,  std::vector<cl::Event> &events)
     {
         cl::Event event;
 
-        int err_num = queue_.enqueueNDRangeKernel(kernal,      cl::NullRange, 
-                                                  global_size, local_size,
-                                                  nullptr,     &event);
+        int err_num = queue_.enqueueNDRangeKernel(kernel,
+                                                  cl::NullRange,
+                                                  cl::NDRange(global_size),
+                                                  cl::NDRange(local_size),
+                                                  nullptr, &event);
 
         if (err_num != CL_SUCCESS)
             throw std::runtime_error{"execute_kernel failed\n"};
@@ -88,6 +73,8 @@ private:
         {
             std::vector<cl::Device> devices;
             pl_devices.getDevices(CL_DEVICE_TYPE_GPU, &devices);
+            if (devices.empty())
+                pl_devices.getDevices(CL_DEVICE_TYPE_CPU, &devices);
 
             auto cond = [](const cl::Device &dev)
             {
@@ -107,19 +94,31 @@ private:
         throw std::runtime_error{"No suiting devises found.\n"};
     }
 
+    bool is_pow2(size_t x) { return x && ((x & (x - 1)) == 0); }
+
+    size_t next_pow2(size_t x)
+    {
+        if (x <= 1)
+            return 1;
+
+        --x;
+
+        for (size_t i = 1; i < sizeof(size_t) * 8; i <<= 1)
+            x |= x >> i;
+
+        return x + 1;
+    }
+
     void round_up_vector(std::vector<int> &vec, bool incr_order)
     {
-        int filler = incr_order ? std::numeric_limits<int>::max() 
-                                : std::numeric_limits<int>::min();
+        const int filler = incr_order ? std::numeric_limits<int>::max()
+                                      : std::numeric_limits<int>::min();
 
-        size_t old_size = vec.size();
-        size_t new_size = std::pow(2, 1 + static_cast<int>(log2(old_size)));
+        const size_t old_size = vec.size();
+        const size_t new_size = is_pow2(old_size) ? old_size : next_pow2(old_size);
 
         vec.resize(new_size);
-
-        auto begin = vec.begin();
-
-        std::fill(begin + old_size, begin + new_size, filler);
+        std::fill (vec.begin() + old_size, vec.end(), filler);
     }
 
     void load_kernels(const std::string &file_name)
@@ -131,7 +130,7 @@ private:
             throw std::runtime_error("Failed to open kernel file: " + file_name);
         }
 
-        std::string kernels_src((std::istreambuf_iterator<char>(file)), 
+        std::string kernels_src((std::istreambuf_iterator<char>(file)),
                                  std::istreambuf_iterator<char>());
 
         auto sources = cl::Program::Sources{kernels_src};
@@ -154,10 +153,10 @@ private:
     {
         for (auto &&evnt : events)
         {
-            const auto start = 
+            const auto start =
                 evnt.getProfilingInfo<CL_PROFILING_COMMAND_START>();
 
-            const auto end = 
+            const auto end =
                 evnt.getProfilingInfo<CL_PROFILING_COMMAND_END>();
 
             const auto evnt_duration = end - start;
@@ -176,40 +175,58 @@ public:
         context_ = cl::Context{device_};
         queue_   = cl::CommandQueue{context_, device_, CL_QUEUE_PROFILING_ENABLE};
 
-        load_kernels("../kernels/bitonic_sort.cl");
+        load_kernels(BITONIC_KERNEL_PATH);
+
+        // try
+        // {
+        //     load_kernels("bitonic_sort.cl");         // ./bitonic_sort
+        // }
+        // catch (...)
+        // {
+        //     load_kernels("kernels/bitonic_sort.cl"); // ./build/bitonic_sort
+        // }
     }
 
     void bsort(std::vector<int> &vec, bool incr_order)
     {
-        size_t old_size = vec.size();
+        const size_t old_size = vec.size();
+        if (old_size == 0) return;
 
         round_up_vector(vec, incr_order);
 
-        size_t glob_size = vec.size() / 2;
+        const size_t glob_size = vec.size() / 2;
 
-        auto max_wg_size = device_.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+        const size_t max_wg_size = device_.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+        const size_t local_mem   = device_.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>();
+        const size_t max_by_lmem = local_mem / (2 * sizeof(int));
 
-        LOG("glob_size: {}\n max_wg_size: {}\n", glob_size, max_wg_size);
+        LOG("glob_size: {}\nmax_wg_size: {}\nlocal_mem: {}\nmax_by_lmem: {}\n",
+            glob_size, max_wg_size, local_mem, max_by_lmem);
 
-        size_t loc_size = std::min(glob_size, max_wg_size);
+        size_t loc_size = std::min({glob_size, max_wg_size, max_by_lmem});
+        while (loc_size > 1 && (glob_size % loc_size) != 0)
+            --loc_size;
+
+        if (loc_size < 2)
+            throw std::runtime_error(":( choose valid local_size (became < 2) :(");
 
         LOG("loc_size: {}\n", loc_size);
 
-        auto nbytes = sizeof(int) * vec.size();
+        const size_t nbytes = sizeof(int) * vec.size();
 
         cl::Buffer glob_buf(context_, CL_MEM_READ_WRITE, nbytes);
 
         queue_.enqueueWriteBuffer(glob_buf, CL_TRUE, 0, nbytes, vec.data());
 
-        const auto pair_amount = std::ceil(std::log2(vec.size()));
+        const uint pair_amount = static_cast<uint>(std::ceil(std::log2(static_cast<double>(vec.size()))));
 
-        uint cur_stage = std::log2(loc_size);
+        uint cur_stage = static_cast<uint>(std::log2((double)loc_size));
 
         cl::LocalSpaceArg loc_buf = cl::Local(2 * loc_size * sizeof(int));
 
-#ifdef PRINT_DURATION
+#ifdef BS_PRINT_DURATION
         cl_ulong duration = 0;
-#endif // PRINT_DURATION
+#endif // BS_PRINT_DURATION
         std::vector<cl::Event> events;
 
         local_bsort.setArg(0, glob_buf);
@@ -219,11 +236,11 @@ public:
 
         execute_kernel(local_bsort, glob_size, loc_size, events);
 
-        events[0].wait();
+        events.back().wait();
 
-#ifdef PRINT_DURATION
+#ifdef BS_PRINT_DURATION
         count_time(events, &duration);
-#endif // PRINT_DURATION
+#endif // BS_PRINT_DURATION
 
         events.clear();
 
@@ -243,13 +260,13 @@ public:
         for (auto &&evnt : events)
             evnt.wait();
 
-#ifdef PRINT_DURATION
+#ifdef BS_PRINT_DURATION
         count_time(events, &duration);
-#endif // PRINT_DURATION
+#endif // BS_PRINT_DURATION
 
         cl::copy(queue_, glob_buf, vec.begin(), vec.end());
 
-#ifdef PRINT_DURATION
+#ifdef BS_PRINT_DURATION
         std::cout << "GPU Duration: " << duration << " nanosec\n";
 #endif
 

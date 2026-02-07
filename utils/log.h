@@ -5,7 +5,7 @@
 
 #include <format>
 
-#ifdef ENABLE_LOGGING
+#ifdef BS_LOG
 
 #define MSG(msg)                                                               \
                                                                                \
@@ -24,6 +24,14 @@
     }                                                                          \
     while (false)
 
+#ifdef BS_DUMP
+  #define BS_STEP_DUMP(state, label, before, after, stage, pass, a, b, swapped) \
+      ::bitonic::dump::step_dump(state, __FILE__, __LINE__, __func__, label, before, after, stage, pass, a, b, swapped)
+#else
+  #define BS_STEP_DUMP(state, label, before, after, stage, pass, a, b, swapped) \
+      do{}while(0)
+#endif
+
 #else
 
 #define MSG(msg)                                                               \
@@ -37,7 +45,7 @@
     }                                                                          \
     while (false)
 
-#endif // ENABLE_LOGGING
+#endif // BS_LOG
 
 #else
 
