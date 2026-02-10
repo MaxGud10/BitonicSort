@@ -1,0 +1,11 @@
+build
+.venv
+third_party
+.vscode
+.github
+draft.cpp
+CMakeUserPresets.json
+build/
+build-*/
+build*/
+draft.hpp
