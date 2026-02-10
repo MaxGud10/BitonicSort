@@ -4,9 +4,9 @@ cmake_policy(SET CMP0091 NEW)
 
 project(BitonicSort LANGUAGES CXX)
 
-find_package(OpenCL REQUIRED)
+find_package(OpenCLICDLoader  CONFIG REQUIRED)
 find_package(OpenCLHeadersCpp CONFIG REQUIRED)
-find_package(OpenCLHeaders CONFIG REQUIRED)
+find_package(OpenCLHeaders    CONFIG REQUIRED)
 
 
 enable_testing()
@@ -57,7 +57,6 @@ else()
         -O0
         -Wall
         -Wextra
-        -Wc++14-compat
         -Wmissing-declarations
         -Wcast-align
         -Wcast-qual
@@ -98,11 +97,21 @@ else()
         -Wlarger-than=8192
         -fPIE
         -Werror=vla
-        -Wno-pre-c++17-compat
-        -Wno-pre-c++20-compat
-        -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,integer-divide-by-zero,nonnull-attribute,null,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
+        # -fsanitize=address,undefined
     )
 endif()
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    list(APPEND RELEASE_COMPILE_OPTIONS
+        -Wno-pre-c++17-compat
+    )
+    list(APPEND DEBUG_COMPILE_OPTIONS
+        -Wc++14-compat
+        -Wno-pre-c++17-compat
+        -Wno-pre-c++20-compat
+    )
+endif()
+
 
 add_executable(bitonic_sort
     src/main.cpp
@@ -146,8 +155,4 @@ target_compile_options(bitonic_sort PRIVATE
 
 target_compile_definitions(bitonic_sort PRIVATE
     $<$<CONFIG:Debug>:DEBUG>
-)
-
-target_link_options(bitonic_sort PRIVATE
-    $<$<CONFIG:Debug>:-fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,nonnull-attribute,null,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr>
 )

@@ -4,8 +4,17 @@
 #include <vector>
 #include <algorithm>
 
+#include "log.h"
+
 namespace bitonic::dump
 {
+
+#ifdef BS_DUMP
+    #define BS_DUMP_STEP(vec, stage, pass, msg) \
+        ::bitonic::dump::dump_step((vec), (stage), (pass), __FILE__, __LINE__, __func__, (msg))
+#else
+    #define BS_DUMP_STEP(...) do{}while(0)
+#endif
 
 struct StepState
 {
@@ -66,44 +75,25 @@ inline void print_diff(const std::vector<int>& before,
     std::printf("\n");
 }
 
-inline void step_dump(StepState& st,
-                      const char* file, int line, const char* func,
-                      const char* label,
-                      const std::vector<int>& before,
-                      const std::vector<int>& after,
-                      int  stage = -1, int  pass = -1,
-                      long a     = -1, long b    = -1,
-                      bool swapped = false)
+inline void dump_step(const std::vector<int>& v,
+                      int         stage, int pass,
+                      const char* file,  int line,
+                      const char* func,
+                      const char* msg)
 {
-    const size_t n = (st.head == 0) ? after.size() : std::min(st.head, after.size());
+    LOG("\n================================================================================\n");
+    LOG("[BITONIC DUMP] stage={} pass={}  {}\n", stage, pass, msg);
+    LOG("called from {}:{} {}\n\n", file, line, func);
 
-    print_header(file, line, func);
+    LOG("idx : ");
+    for (size_t i = 0; i < v.size(); ++i)
+        LOG("{:3d} ", (int)i);
 
-    if (stage >= 0 && pass >= 0)
-        std::printf("STEP %zu: %s | stage=%d pass=%d\n", st.step, label, stage, pass);
-    else
-        std::printf("STEP %zu: %s\n", st.step, label);
+    LOG("\ndata: ");
+    for (int x : v)
+        LOG("{:3d} ", x);
 
-    print_idx_line(n);
-    print_vec_line("before", before, n);
-    print_vec_line("after",  after,  n);
-    print_diff(before, after, n);
-
-    if (a >= 0 && b >= 0 && (size_t)a < n && (size_t)b < n)
-    {
-        std::printf("pair : (%ld,%ld)%s\n", a, b, swapped ? " swap" : "");
-        print_marks(n, (size_t)a, (size_t)b);
-    }
-
-    std::printf("------------------------------------------------\n");
-
-    ++st.step;
-
-    if (st.pause)
-    {
-        std::printf("press Enter...\n");
-        (void)std::getchar();
-    }
+    LOG("\n================================================================================\n");
 }
 
 } // namespace bitonic::dump

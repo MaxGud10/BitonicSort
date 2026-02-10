@@ -8,8 +8,10 @@ add_definitions(-DTEST_DATA_DIR=\"${TEST_DATA_DIR}\")
 
 project(Testing LANGUAGES CXX)
 
-find_package(OpenCL REQUIRED)
+find_package(OpenCLICDLoader CONFIG REQUIRED)
 find_package(GTest REQUIRED)
+find_package(OpenCLHeadersCpp CONFIG REQUIRED)
+find_package(OpenCLHeaders CONFIG REQUIRED)
 
 set(RELEASE_COMPILE_OPTIONS
 	-O2
@@ -77,7 +79,7 @@ set(DEBUG_COMPILE_OPTIONS
 	-Werror=vla
 	-Wno-pre-c++17-compat
 	-Wno-pre-c++20-compat
-	-fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,integer-divide-by-zero,nonnull-attribute,null,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
+	# -fsanitize=address,undefined
 )
 
 add_executable(unit_tests
@@ -98,30 +100,49 @@ target_compile_definitions(unit_tests PRIVATE
     $<$<CONFIG:Debug>:DEBUG>
 )
 
+# target_link_options(unit_tests PRIVATE
+# 	$<$<CONFIG:Debug>:-fsanitize=address,undefined>
+# )
+
 target_link_options(unit_tests PRIVATE
-    $<$<CONFIG:Debug>:-fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,nonnull-attribute,null,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr>
+  $<$<CONFIG:Debug>:-Wl,--no-as-needed>
 )
 
-target_link_libraries(unit_tests
-	GTest::GTest
-	GTest::Main
-	${OpenCL_LIBRARIES}
-)
+# target_link_libraries(unit_tests
+# 	GTest::GTest
+# 	GTest::Main
+# 	${OpenCL_LIBRARIES}
+# )
 
 target_include_directories(unit_tests PRIVATE
 	${CMAKE_SOURCE_DIR}/unit_tests/test_utils/include
 	${CMAKE_SOURCE_DIR}/include
 	${CMAKE_SOURCE_DIR}/include/detail
 	${CMAKE_SOURCE_DIR}/utils
-	${OpenCL_INCLUDE_DIRS}
 )
 
-if(ENABLE_BD_TESTS)
-    target_compile_definitions(unit_tests PRIVATE ENABLE_BD_TESTS)
+target_link_libraries(unit_tests PRIVATE
+    GTest::GTest
+    GTest::Main
+    OpenCL::OpenCL
+    OpenCL::HeadersCpp
+    OpenCL::Headers
+)
+
+if(BS_DUMP)
+    target_compile_definitions(unit_tests PRIVATE BS_DUMP)
 endif()
 
-if(BS_BIGTESTS)
-    target_compile_definitions(unit_tests PRIVATE BS_BIGTESTS)
+if(BS_LOG)
+    target_compile_definitions(unit_tests PRIVATE BS_LOG)
+endif()
+
+if(BS_PRINT_DURATION)
+    target_compile_definitions(unit_tests PRIVATE BS_PRINT_DURATION)
+endif()
+
+if(BS_CPU)
+    target_compile_definitions(unit_tests PRIVATE BS_CPU)
 endif()
 
 enable_testing()

@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "log.h"
+// #include "dump.h"
 #include "utils.h"
 
 #ifndef CL_HPP_TARGET_OPENCL_VERSION
@@ -23,7 +24,6 @@
 
 // TODO: написать CI
 // TODO: написать README
-// TODO: написать dump
 // TODO: разбить тесты на .ans and .dat
 
 #include <CL/opencl.hpp>
@@ -44,8 +44,6 @@ private:
     cl::Kernel local_bsort;
 
     size_t work_gr_sz_{};
-
-    //using bsort_t = cl::KernelFunctor<cl::Buffer, int>;
 
     void execute_kernel (const cl::Kernel &kernel,     size_t                 global_size,
                                size_t     local_size,  std::vector<cl::Event> &events)
@@ -176,15 +174,6 @@ public:
         queue_   = cl::CommandQueue{context_, device_, CL_QUEUE_PROFILING_ENABLE};
 
         load_kernels(BITONIC_KERNEL_PATH);
-
-        // try
-        // {
-        //     load_kernels("bitonic_sort.cl");         // ./bitonic_sort
-        // }
-        // catch (...)
-        // {
-        //     load_kernels("kernels/bitonic_sort.cl"); // ./build/bitonic_sort
-        // }
     }
 
     void bsort(std::vector<int> &vec, bool incr_order)
