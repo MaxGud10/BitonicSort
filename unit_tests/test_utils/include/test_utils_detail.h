@@ -15,7 +15,8 @@ namespace test_utils
 namespace detail
 {
 
-template <typename T> std::string get_result(std::string_view file_name)
+template <typename T>
+std::string get_result(const std::string &file_name)
 {
     std::ifstream test_data;
 
@@ -36,7 +37,7 @@ template <typename T> std::string get_result(std::string_view file_name)
     std::vector<int> vec;
                      vec.reserve(N);
 
-    for ([[maybe_unused]] auto _ : std::views::iota(size_t(0), N))
+    for (std::size_t i = 0; i < N; ++i)
     {
         int elem{};
 
@@ -54,7 +55,7 @@ template <typename T> std::string get_result(std::string_view file_name)
     return result.str();
 }
 
-inline std::string get_answer(std::string_view file_name)
+inline std::string get_answer(const std::string &file_name)
 {
     std::ifstream answer_file;
                   answer_file.open(std::string(file_name));

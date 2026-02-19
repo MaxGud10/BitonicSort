@@ -4,6 +4,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <cstdint>
 #include <iterator>
 #include <limits>
 #include <numeric>
@@ -207,9 +208,8 @@ public:
 
         queue_.enqueueWriteBuffer(glob_buf, CL_TRUE, 0, nbytes, vec.data());
 
-        const uint pair_amount = static_cast<uint>(std::ceil(std::log2(static_cast<double>(vec.size()))));
-
-        uint cur_stage = static_cast<uint>(std::log2((double)loc_size));
+        const std::uint32_t pair_amount = static_cast<std::uint32_t>(std::ceil(std::log2(static_cast<double>(vec.size()))));
+              std::uint32_t cur_stage   = static_cast<std::uint32_t>(std::log2((double)loc_size));
 
         cl::LocalSpaceArg loc_buf = cl::Local(2 * loc_size * sizeof(int));
 
@@ -235,7 +235,7 @@ public:
 
         for (; cur_stage < pair_amount; ++cur_stage)
         {
-            for (uint passed_stage = 0; passed_stage < cur_stage + 1; ++passed_stage)
+            for (std::uint32_t passed_stage = 0; passed_stage < cur_stage + 1; ++passed_stage)
             {
                 global_bmerge_.setArg(0, glob_buf);
                 global_bmerge_.setArg(1, cur_stage);

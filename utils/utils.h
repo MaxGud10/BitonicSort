@@ -27,15 +27,25 @@ inline int cmp_double(double lhs, double rhs)
         return -1;
 }
 
-template <typename T> void hight_dump(const std::vector<T> &data)
+inline void hight_dump_line(char ch, std::size_t count)
 {
-    std::cout << std::format("{:#^{}}", "", 55) << '\n';
-    for (const auto &elem : data)
+    std::cout << std::string(count, ch) << '\n';
+}
+
+template <typename T>
+void hight_dump(const std::vector<T>& vec)
+{
+    hight_dump_line('#', 55);
+
+    for (const auto& elem : vec)
     {
-        std::cout << std::format("{:{}}", "", elem) << elem << '\n';
+        long long   n      =         static_cast<long long>(elem);
+        std::size_t spaces = n > 0 ? static_cast<std::size_t>(n) : 0;
+
+        std::cout << std::string(spaces, ' ') << elem << '\n';
     }
 
-    std::cout << std::format("{:#^{}}", "", 55) << '\n';
+    hight_dump_line('#', 55);
 }
 
 template <typename C>
