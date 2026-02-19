@@ -18,8 +18,9 @@ option(BS_BIGTESTS        "Enable large/slow tests" OFF)
 option(BS_DUMP            "Enable debug dumps" OFF)
 
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Build type")
 add_subdirectory(unit_tests/)

@@ -4,7 +4,6 @@
 #include <chrono>
 #include <iostream>
 #include <random>
-#include <ranges>
 #include <vector>
 
 int main()
@@ -23,7 +22,7 @@ try
     std::vector<int> vec;
     vec.reserve(N);
 
-    for ([[maybe_unused]] auto _ : std::views::iota(size_t(0), N))
+    for (size_t i = 0; i < N; ++i)
     {
         int elem{};
 
@@ -46,7 +45,8 @@ try
     std::sort(vec_copy.begin(), vec_copy.end());
     auto end   = std::chrono::high_resolution_clock::now();
 
-    [[maybe_unused]] auto duration = end - start;
+    auto duration = end - start;
+    (void)duration;
 
 #ifdef PRINT_DURATION
     std::cout << "CPU Duration: " << duration.count() << " nanosec\n";
