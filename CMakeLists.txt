@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
-
 cmake_policy(SET CMP0091 NEW)
-
 project(BitonicSort LANGUAGES CXX)
 
-find_package(OpenCLICDLoader  CONFIG REQUIRED)
+find_package(OpenCL REQUIRED)
 find_package(OpenCLHeadersCpp CONFIG REQUIRED)
 find_package(OpenCLHeaders    CONFIG REQUIRED)
 

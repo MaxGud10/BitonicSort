@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+        compiler: [gcc, clang]
+
+    env:
+      CONAN_HOME: ${{ github.workspace }}/.conan2
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies (OpenCL runtime + build tools)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ninja-build cmake \
+            gcc g++ clang \
+            ocl-icd-opencl-dev pocl-opencl-icd \
+            clinfo
+
+      - name: Show OpenCL platforms (debug)
+        run: |
+          clinfo || true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Conan
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+
+      - name: Conan profile detect
+        run: |
+          conan profile detect --force
+
+      - name: Conan cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.CONAN_HOME }}
+          key: conan-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ hashFiles('conanfile.txt') }}
+          restore-keys: |
+            conan-${{ runner.os }}-${{ matrix.compiler }}-
+            conan-${{ runner.os }}-
+
+      - name: Configure compiler env
+        run: |
+          if [ "${{ matrix.compiler }}" = "clang" ]; then
+            echo "CC=clang" >> $GITHUB_ENV
+            echo "CXX=clang++" >> $GITHUB_ENV
+          else
+            echo "CC=gcc" >> $GITHUB_ENV
+            echo "CXX=g++" >> $GITHUB_ENV
+          fi
+
+      - name: Conan install (${{ matrix.build_type }})
+        run: |
+          conan install . \
+            --output-folder=third_party \
+            -s build_type=${{ matrix.build_type }} \
+            --build=missing
+
+      - name: CMake configure (${{ matrix.build_type }})
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_TOOLCHAIN_FILE=./third_party/conan_toolchain.cmake \
+            -DCMAKE_C_COMPILER=${{ env.CC }} \
+            -DCMAKE_CXX_COMPILER=${{ env.CXX }}
+
+      - name: Build
+        run: |
+          cmake --build build
+
+      - name: Test
+        run: |
+          ctest --test-dir build --output-on-failure

@@ -9,7 +9,7 @@ add_definitions(-DTEST_DATA_DIR=\"${TEST_DATA_DIR}\")
 
 project(Testing LANGUAGES CXX)
 
-find_package(OpenCLICDLoader CONFIG REQUIRED)
+find_package(OpenCL REQUIRED)
 find_package(GTest REQUIRED)
 find_package(OpenCLHeadersCpp CONFIG REQUIRED)
 find_package(OpenCLHeaders CONFIG REQUIRED)

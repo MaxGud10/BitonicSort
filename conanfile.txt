@@ -2,7 +2,6 @@
 gtest/1.12.1
 opencl-headers/2023.04.17
 opencl-clhpp-headers/2023.04.17
-opencl-icd-loader/2023.04.17
 
 [generators]
 CMakeDeps
