@@ -27,7 +27,7 @@ conan install . --output-folder=third_party -s build_type=Release --build=missin
 
 3. Создаем проект:
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=./third_party/conan_toolchain.cmake
+cmake -S ./ -B build/ -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
@@ -44,7 +44,7 @@ conan install . --output-folder=third_party -s build_type=Debug --build=missing
 ```
 3. Создаем проект
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=./third_party/conan_toolchain.cmake
+cmake -S ./ -B build/ -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 
