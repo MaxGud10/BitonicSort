@@ -4,7 +4,6 @@
 
 Результат работы Bitonic Sort на GPU дерева сравнивается в результатом работы std::sort на CPU.
 
-
 ## Запуск проекта
 ```
 git clone https://github.com/MaxGud10/BitonicSort
