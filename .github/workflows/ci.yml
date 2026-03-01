@@ -50,27 +50,6 @@ jobs:
         run: |
           clinfo || true
 
-      - name: Install system dependencies (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          choco install -y ninja cmake
-          # CPU OpenCL runtime, чтобы реально были платформы/устройства
-          choco install -y opencl-intel-cpu-runtime
-          # (не обязателен) clinfo
-          choco install -y clinfo -r; if ($LASTEXITCODE -ne 0) { $LASTEXITCODE = 0 }
-
-      - name: Setup MSVC environment (Windows)
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Show OpenCL platforms (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          clinfo
-        continue-on-error: true
-
       - name: Configure compiler env (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -82,7 +61,31 @@ jobs:
             echo "CXX=g++" >> $GITHUB_ENV
           fi
 
-      - name: Cache CMake FetchContent
+      - name: Install build tools (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install -y ninja cmake
+
+      - name: Setup MSVC environment (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install OpenCL runtime (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install -y opencl-intel-cpu-runtime
+
+      - name: Setup vcpkg + install OpenCL ICD loader (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          git clone https://github.com/microsoft/vcpkg $env:GITHUB_WORKSPACE\vcpkg
+          & $env:GITHUB_WORKSPACE\vcpkg\bootstrap-vcpkg.bat
+          & $env:GITHUB_WORKSPACE\vcpkg\vcpkg.exe install opencl --triplet x64-windows
+
+      - name: Cache FetchContent
         uses: actions/cache@v4
         with:
           path: |
@@ -101,9 +104,9 @@ jobs:
               -DCMAKE_C_COMPILER=${{ env.CC }} \
               -DCMAKE_CXX_COMPILER=${{ env.CXX }}
           else
-            # Windows: компилятор берётся из MSVC environment (cl.exe)
             cmake -S . -B build -G Ninja \
-              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCMAKE_TOOLCHAIN_FILE="${GITHUB_WORKSPACE}/vcpkg/scripts/buildsystems/vcpkg.cmake"
           fi
 
       - name: Build
