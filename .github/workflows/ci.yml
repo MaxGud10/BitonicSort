@@ -6,21 +6,37 @@ on:
 
 jobs:
   build-test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        build_type: [Debug, Release]
-        compiler: [gcc, clang]
+        include:
+          - os: ubuntu-latest
+            build_type: Debug
+            compiler: gcc
+          - os: ubuntu-latest
+            build_type: Release
+            compiler: gcc
+          - os: ubuntu-latest
+            build_type: Debug
+            compiler: clang
+          - os: ubuntu-latest
+            build_type: Release
+            compiler: clang
 
-    env:
-      CONAN_HOME: ${{ github.workspace }}/.conan2
+          - os: windows-latest
+            build_type: Debug
+            compiler: msvc
+          - os: windows-latest
+            build_type: Release
+            compiler: msvc
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install system dependencies (OpenCL runtime + build tools)
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -29,35 +45,34 @@ jobs:
             ocl-icd-opencl-dev pocl-opencl-icd \
             clinfo
 
-      - name: Show OpenCL platforms (debug)
+      - name: Show OpenCL platforms (Linux)
+        if: runner.os == 'Linux'
         run: |
           clinfo || true
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install Conan
+      - name: Install system dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          python -m pip install --upgrade pip
-          pip install conan
+          choco install -y ninja cmake
+          # CPU OpenCL runtime, чтобы реально были платформы/устройства
+          choco install -y opencl-intel-cpu-runtime
+          # (не обязателен) clinfo
+          choco install -y clinfo -r; if ($LASTEXITCODE -ne 0) { $LASTEXITCODE = 0 }
 
-      - name: Conan profile detect
+      - name: Setup MSVC environment (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Show OpenCL platforms (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          conan profile detect --force
+          clinfo
+        continue-on-error: true
 
-      - name: Conan cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.CONAN_HOME }}
-          key: conan-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ hashFiles('conanfile.txt') }}
-          restore-keys: |
-            conan-${{ runner.os }}-${{ matrix.compiler }}-
-            conan-${{ runner.os }}-
-
-      - name: Configure compiler env
+      - name: Configure compiler env (Linux)
+        if: runner.os == 'Linux'
         run: |
           if [ "${{ matrix.compiler }}" = "clang" ]; then
             echo "CC=clang" >> $GITHUB_ENV
@@ -67,20 +82,29 @@ jobs:
             echo "CXX=g++" >> $GITHUB_ENV
           fi
 
-      - name: Conan install (${{ matrix.build_type }})
-        run: |
-          conan install . \
-            --output-folder=third_party \
-            -s build_type=${{ matrix.build_type }} \
-            --build=missing
+      - name: Cache CMake FetchContent
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/_deps
+          key: fetchcontent-${{ runner.os }}-${{ matrix.build_type }}-${{ matrix.compiler }}-${{ hashFiles('CMakeLists.txt', 'unit_tests/CMakeLists.txt') }}
+          restore-keys: |
+            fetchcontent-${{ runner.os }}-${{ matrix.build_type }}-${{ matrix.compiler }}-
+            fetchcontent-${{ runner.os }}-
 
       - name: CMake configure (${{ matrix.build_type }})
+        shell: bash
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DCMAKE_TOOLCHAIN_FILE=./third_party/conan_toolchain.cmake \
-            -DCMAKE_C_COMPILER=${{ env.CC }} \
-            -DCMAKE_CXX_COMPILER=${{ env.CXX }}
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCMAKE_C_COMPILER=${{ env.CC }} \
+              -DCMAKE_CXX_COMPILER=${{ env.CXX }}
+          else
+            # Windows: компилятор берётся из MSVC environment (cl.exe)
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          fi
 
       - name: Build
         run: |

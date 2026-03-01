@@ -59,9 +59,6 @@ if(MSVC)
 else()
     set(RELEASE_COMPILE_OPTIONS
         -O2
-        -fstack-protector
-        -fPIE
-        -fstrict-overflow
         -Wformat-security
         -Wformat=2
         -Wall
@@ -76,7 +73,6 @@ else()
 
     set(DEBUG_COMPILE_OPTIONS
         -D_DEBUG
-        -ggdb3
         -O0
         -Wall
         -Wextra
@@ -111,17 +107,22 @@ else()
         -Wno-narrowing
         -Wno-old-style-cast
         -Wno-varargs
-        -Wstack-protector
-        -fcheck-new
-        -fsized-deallocation
-        -fstack-protector
-        -fstrict-overflow
-        -fno-omit-frame-pointer
-        -Wlarger-than=8192
-        -fPIE
         -Werror=vla
         # -fsanitize=address,undefined
     )
+
+    # Linux/Unix-only hardening flags
+    if(NOT WIN32)
+        list(APPEND RELEASE_COMPILE_OPTIONS
+            -fstack-protector
+            -fstrict-overflow
+        )
+        list(APPEND DEBUG_COMPILE_OPTIONS
+            -fstack-protector
+            -fstrict-overflow
+            -Wlarger-than=8192
+        )
+    endif()
 endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
