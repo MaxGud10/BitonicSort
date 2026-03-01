@@ -23,10 +23,6 @@
 
 #define CL_HPP_ENABLE_EXCEPTIONS
 
-// TODO: написать CI
-// TODO: написать README
-// TODO: разбить тесты на .ans and .dat
-
 #include <CL/opencl.hpp>
 
 namespace bitonic

@@ -13,18 +13,8 @@ mkdir build
 
 
 ### `Pежим Release`
-1. Создадим виртуальную среду и установим Conan:
-```bash
-python3 -m venv .venv && source .venv/bin/activate && pip3 install conan
-```
 
-
-2. Установим зависимости проекта с помощью Conan:
-```bash
-conan install . --output-folder=third_party -s build_type=Release --build=missing
-```
-
-3. Создаем проект:
+Создаем проект:
 ```bash
 cmake -S ./ -B build/ -DCMAKE_BUILD_TYPE=Release
 cmake --build build
@@ -32,16 +22,7 @@ cmake --build build
 
 ### `Режим Debug`
 
-1. Создадим виртуальную среду и установим Conan:
-
-```bash
-python3 -m venv .venv && source .venv/bin/activate && pip3 install conan
-```
-2. Установим зависимости проекта с помощью Conan:
-```bash
-conan install . --output-folder=third_party -s build_type=Debug --build=missing
-```
-3. Создаем проект
+Создаем проект
 ```bash
 cmake -S ./ -B build/ -DCMAKE_BUILD_TYPE=Debug
 cmake --build build

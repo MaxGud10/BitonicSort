@@ -2,10 +2,34 @@ cmake_minimum_required(VERSION 3.14)
 cmake_policy(SET CMP0091 NEW)
 project(BitonicSort LANGUAGES CXX)
 
-find_package(OpenCL REQUIRED)
-find_package(OpenCLHeadersCpp CONFIG REQUIRED)
-find_package(OpenCLHeaders    CONFIG REQUIRED)
+include(FetchContent)
 
+FetchContent_Declare(
+  OpenCLHeaders
+  GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-Headers.git
+  GIT_TAG        v2023.12.14
+)
+FetchContent_GetProperties(OpenCLHeaders)
+if(NOT OpenCLHeaders_POPULATED)
+  FetchContent_Populate(OpenCLHeaders)
+endif()
+
+FetchContent_Declare(
+  OpenCLCLHPP
+  GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-CLHPP.git
+  GIT_TAG        v2023.12.14
+)
+FetchContent_GetProperties(OpenCLCLHPP)
+if(NOT OpenCLCLHPP_POPULATED)
+  FetchContent_Populate(OpenCLCLHPP)
+endif()
+
+add_library(OpenCLHeadersCpp INTERFACE)
+target_include_directories(OpenCLHeadersCpp INTERFACE
+  ${OpenCLHeaders_SOURCE_DIR}
+  ${OpenCLHeaders_SOURCE_DIR}/CL
+  ${OpenCLCLHPP_SOURCE_DIR}/include
+)
 
 enable_testing()
 
@@ -121,10 +145,11 @@ target_include_directories(bitonic_sort PRIVATE
 	${CMAKE_SOURCE_DIR}/utils
 )
 
+find_package(OpenCL REQUIRED)
+
 target_link_libraries(bitonic_sort PRIVATE
-    OpenCL::OpenCL
-    OpenCL::HeadersCpp
-    OpenCL::Headers
+  OpenCL::OpenCL
+  OpenCLHeadersCpp
 )
 
 target_compile_definitions(bitonic_sort PRIVATE
