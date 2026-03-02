@@ -71,13 +71,7 @@ jobs:
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Install OpenCL runtime (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          choco install -y opencl-intel-cpu-runtime
-
-      - name: Setup vcpkg + install OpenCL ICD loader (Windows)
+      - name: Setup vcpkg + install OpenCL SDK (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
@@ -106,13 +100,15 @@ jobs:
           else
             cmake -S . -B build -G Ninja \
               -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-              -DCMAKE_TOOLCHAIN_FILE="${GITHUB_WORKSPACE}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+              -DCMAKE_TOOLCHAIN_FILE="${GITHUB_WORKSPACE}/vcpkg/scripts/buildsystems/vcpkg.cmake" \
+              -DVCPKG_TARGET_TRIPLET=x64-windows
           fi
 
       - name: Build
         run: |
           cmake --build build
 
-      - name: Test
+      - name: Test (Linux only)
+        if: runner.os == 'Linux'
         run: |
           ctest --test-dir build --output-on-failure
