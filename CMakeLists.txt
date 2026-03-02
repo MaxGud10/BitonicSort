@@ -44,11 +44,11 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(OpenCL CONFIG QUIET)
-if(NOT OpenCL_FOUND)
-  find_package(OpenCL REQUIRED)
+if(DEFINED CMAKE_TOOLCHAIN_FILE)
+    find_package(OpenCL CONFIG REQUIRED)
+else()
+    find_package(OpenCL REQUIRED)
 endif()
-
 
 # set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Build type")
 add_subdirectory(unit_tests/)
