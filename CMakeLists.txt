@@ -44,7 +44,13 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Build type")
+find_package(OpenCL CONFIG QUIET)
+if(NOT OpenCL_FOUND)
+  find_package(OpenCL REQUIRED)
+endif()
+
+
+# set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Build type")
 add_subdirectory(unit_tests/)
 
 configure_file(${CMAKE_SOURCE_DIR}/kernels/bitonic_sort.cl
@@ -146,7 +152,6 @@ target_include_directories(bitonic_sort PRIVATE
 	${CMAKE_SOURCE_DIR}/utils
 )
 
-find_package(OpenCL CONFIG REQUIRED)
 
 target_link_libraries(bitonic_sort PRIVATE
   OpenCL::OpenCL

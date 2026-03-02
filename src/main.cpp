@@ -33,7 +33,7 @@ try
         vec.push_back(elem);
     }
 
-#ifdef ENABLE_LOGGING
+#ifdef BS_LOG
     std::cout << "Initial data:\n";
     bitonic::utils::dump(vec);
 #endif
@@ -48,7 +48,7 @@ try
     auto duration = end - start;
     (void)duration;
 
-#ifdef PRINT_DURATION
+#ifdef BS_PRINT_DURATION
     std::cout << "CPU Duration: " << duration.count() << " nanosec\n";
 #endif // PRINT_DURATION
 
