@@ -8,7 +8,7 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-find_package(OpenCL REQUIRED)
+find_package(OpenCL CONFIG REQUIRED)
 
 add_executable(unit_tests
   src/unit_tests.cpp

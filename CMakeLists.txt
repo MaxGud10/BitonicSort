@@ -146,7 +146,7 @@ target_include_directories(bitonic_sort PRIVATE
 	${CMAKE_SOURCE_DIR}/utils
 )
 
-find_package(OpenCL REQUIRED)
+find_package(OpenCL CONFIG REQUIRED)
 
 target_link_libraries(bitonic_sort PRIVATE
   OpenCL::OpenCL
