@@ -7,7 +7,9 @@
 
 #include "utils.h"
 
-namespace bitonic::cpu
+namespace bitonic
+{
+namespace cpu
 {
 
 bool is_pow2(size_t x) { return x && ((x & (x - 1)) == 0); }
@@ -36,4 +38,5 @@ inline void round_up_vector(std::vector<int>& vec, bool incr_order)
     vec.resize(new_size);
     std::fill(vec.begin() + old_size, vec.end(), filler);
 }
-} // namespace bitonic::cpu
+} // namespace cpu
+} // namespace bitonic
