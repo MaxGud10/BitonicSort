@@ -71,11 +71,23 @@ jobs:
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Cache vcpkg (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: |
+            vcpkg
+          key: vcpkg-${{ runner.os }}-opencl-${{ hashFiles('**/vcpkg.json', 'CMakeLists.txt') }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-opencl-
+
       - name: Setup vcpkg + install OpenCL SDK (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          git clone https://github.com/microsoft/vcpkg $env:GITHUB_WORKSPACE\vcpkg
+          if (!(Test-Path "$env:GITHUB_WORKSPACE\vcpkg")) {
+            git clone https://github.com/microsoft/vcpkg $env:GITHUB_WORKSPACE\vcpkg
+          }
           & $env:GITHUB_WORKSPACE\vcpkg\bootstrap-vcpkg.bat
           & $env:GITHUB_WORKSPACE\vcpkg\vcpkg.exe install opencl --triplet x64-windows
 
@@ -112,3 +124,24 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           ctest --test-dir build --output-on-failure
+
+      - name: Benchmarks (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          set -euxo pipefail
+          echo "== GPU bench =="
+          ./build/bitonic_gpu_bench < ./unit_tests/data/common/test_1000.dat
+          ./build/bitonic_gpu_bench < ./unit_tests/data/common/test_1500.dat
+          ./build/bitonic_gpu_bench < ./unit_tests/data/common/test_15000.dat
+
+          echo "== CPU bench =="
+          ./build/bitonic_cpu_bench < ./unit_tests/data/common/test_1000.dat
+          ./build/bitonic_cpu_bench < ./unit_tests/data/common/test_1500.dat
+          ./build/bitonic_cpu_bench < ./unit_tests/data/common/test_15000.dat
+
+      - name: CPU bench (Windows only)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # CPU bench не требует OpenCL runtime, можно запускать
+          Get-Content ".\unit_tests\data\common\test_1000.dat" | .\build\bitonic_cpu_bench.exe

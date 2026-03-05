@@ -147,20 +147,54 @@ add_executable(bitonic_sort
     src/main.cpp
 )
 
-target_include_directories(bitonic_sort PRIVATE
-	${CMAKE_SOURCE_DIR}/include
-	${CMAKE_SOURCE_DIR}/utils
+add_executable(bitonic_gpu_bench
+    src/bench_gpu.cpp
 )
 
-
-target_link_libraries(bitonic_sort PRIVATE
-  OpenCL::OpenCL
-  OpenCLHeadersCpp
+add_executable(bitonic_cpu_bench
+    src/bench_cpu.cpp
 )
 
-target_compile_definitions(bitonic_sort PRIVATE
+foreach(tgt IN ITEMS bitonic_sort bitonic_gpu_bench)
+  target_include_directories(${tgt} PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/utils
+  )
+
+  target_link_libraries(${tgt} PRIVATE
+    OpenCL::OpenCL
+    OpenCLHeadersCpp
+  )
+
+  target_compile_definitions(${tgt} PRIVATE
     BITONIC_KERNEL_PATH="${CMAKE_BINARY_DIR}/bitonic_sort.cl"
+  )
+
+  target_compile_options(${tgt} PRIVATE
+    $<$<CONFIG:Debug>:${DEBUG_COMPILE_OPTIONS}>
+    $<$<CONFIG:Release>:${RELEASE_COMPILE_OPTIONS}>
+  )
+
+  target_compile_definitions(${tgt} PRIVATE
+    $<$<CONFIG:Debug>:DEBUG>
+  )
+endforeach()
+
+target_include_directories(bitonic_cpu_bench PRIVATE
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/utils
 )
+
+target_compile_options(bitonic_cpu_bench PRIVATE
+  $<$<CONFIG:Debug>:${DEBUG_COMPILE_OPTIONS}>
+  $<$<CONFIG:Release>:${RELEASE_COMPILE_OPTIONS}>
+)
+
+target_compile_definitions(bitonic_cpu_bench PRIVATE
+  $<$<CONFIG:Debug>:DEBUG>
+)
+
+
 
 if(BS_LOG)
     target_compile_definitions(bitonic_sort PRIVATE BS_LOG)
@@ -178,10 +212,6 @@ if(BS_DUMP)
     target_compile_definitions(bitonic_sort PRIVATE BS_DUMP)
 endif()
 
-target_compile_options(bitonic_sort PRIVATE
-    $<$<CONFIG:Debug>:${DEBUG_COMPILE_OPTIONS}>
-    $<$<CONFIG:Release>:${RELEASE_COMPILE_OPTIONS}>
-)
 
 target_compile_definitions(bitonic_sort PRIVATE
     $<$<CONFIG:Debug>:DEBUG>

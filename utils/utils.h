@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <cmath>
 
 #include "log.h"
 
@@ -17,7 +18,7 @@ inline int cmp_double(double lhs, double rhs)
     if (std::isnan(lhs) && std::isnan(rhs))
         return 0;
 
-    if (fabs(lhs - rhs) < fp_tolerance)
+    if (std::fabs(lhs - rhs) < fp_tolerance)
         return 0;
 
     else if ((lhs - rhs) > fp_tolerance)

@@ -27,6 +27,34 @@ cmake --build build
 cmake -S ./ -B build/ -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
+### `Запуск`
+```
+./build/bitonic_sort < unit_tests/data/common/test_1000.dat
+```
+
+# `Benchmark режим`
+
+Для измерения производительности реализованы два отдельных исполняемых файла.
+
+-----
+
+## `GPU benchmark`
+
+Измеряет:
+- **GPU_event_ns** - время выполнения OpenCL kernels
+- **GPU_wall_ns** - общее wall-time выполнения
+
+### Запуск
+```
+./build/bitonic_gpu_bench < unit_tests/data/common/test_1000.dat
+```
+## `CPU benchmark`
+
+### Запуск
+```
+./build/bitonic_cpu_bench < unit_tests/data/common/test_1000.dat
+```
+
 
 ### Запуск примера основной программы
 

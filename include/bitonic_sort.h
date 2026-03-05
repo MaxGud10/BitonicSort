@@ -11,10 +11,11 @@
 #include <random>
 #include <stdexcept>
 #include <vector>
+#include <chrono>
 
 #include "log.h"
-// #include "dump.h"
 #include "utils.h"
+#include "bitonic_cpu.h"
 
 #ifndef CL_HPP_TARGET_OPENCL_VERSION
 #define CL_HPP_MINIMUM_OPENCL_VERSION 120
@@ -89,33 +90,6 @@ private:
         throw std::runtime_error{"No suiting devises found.\n"};
     }
 
-    bool is_pow2(size_t x) { return x && ((x & (x - 1)) == 0); }
-
-    size_t next_pow2(size_t x)
-    {
-        if (x <= 1)
-            return 1;
-
-        --x;
-
-        for (size_t i = 1; i < sizeof(size_t) * 8; i <<= 1)
-            x |= x >> i;
-
-        return x + 1;
-    }
-
-    void round_up_vector(std::vector<int> &vec, bool incr_order)
-    {
-        const int filler = incr_order ? std::numeric_limits<int>::max()
-                                      : std::numeric_limits<int>::min();
-
-        const size_t old_size = vec.size();
-        const size_t new_size = is_pow2(old_size) ? old_size : next_pow2(old_size);
-
-        vec.resize(new_size);
-        std::fill (vec.begin() + old_size, vec.end(), filler);
-    }
-
     void load_kernels(const std::string &file_name)
     {
         std::ifstream file(file_name);
@@ -173,21 +147,28 @@ public:
         load_kernels(BITONIC_KERNEL_PATH);
     }
 
-    void bsort(std::vector<int> &vec, bool incr_order)
+    void bsort_timed(std::vector<int> &vec,          bool       incr_order,
+                     cl_ulong         &gpu_event_ns, long long& gpu_wall_ns)
     {
-        const size_t old_size = vec.size();
-        if (old_size == 0) return;
+        using clock = std::chrono::steady_clock;
+        const auto wall_start = clock::now();
 
-        round_up_vector(vec, incr_order);
+        gpu_event_ns = 0;
+
+        const size_t old_size = vec.size();
+        if (old_size == 0)
+        {
+            gpu_wall_ns = 0;
+            return;
+        }
+
+        bitonic::cpu::round_up_vector(vec, incr_order);
 
         const size_t glob_size = vec.size() / 2;
 
         const size_t max_wg_size = device_.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
         const size_t local_mem   = device_.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>();
         const size_t max_by_lmem = local_mem / (2 * sizeof(int));
-
-        LOG("glob_size: {}\nmax_wg_size: {}\nlocal_mem: {}\nmax_by_lmem: {}\n",
-            glob_size, max_wg_size, local_mem, max_by_lmem);
 
         size_t loc_size = std::min({glob_size, max_wg_size, max_by_lmem});
         while (loc_size > 1 && (glob_size % loc_size) != 0)
@@ -196,23 +177,20 @@ public:
         if (loc_size < 2)
             throw std::runtime_error(":( choose valid local_size (became < 2) :(");
 
-        LOG("loc_size: {}\n", loc_size);
-
         const size_t nbytes = sizeof(int) * vec.size();
-
         cl::Buffer glob_buf(context_, CL_MEM_READ_WRITE, nbytes);
 
         queue_.enqueueWriteBuffer(glob_buf, CL_TRUE, 0, nbytes, vec.data());
 
-        const std::uint32_t pair_amount = static_cast<std::uint32_t>(std::ceil(std::log2(static_cast<double>(vec.size()))));
-              std::uint32_t cur_stage   = static_cast<std::uint32_t>(std::log2((double)loc_size));
+        const std::uint32_t pair_amount =
+            static_cast<std::uint32_t>(std::ceil(std::log2(static_cast<double>(vec.size()))));
+        std::uint32_t cur_stage =
+            static_cast<std::uint32_t>(std::log2(static_cast<double>(loc_size)));
 
         cl::LocalSpaceArg loc_buf = cl::Local(2 * loc_size * sizeof(int));
 
-#ifdef BS_PRINT_DURATION
-        cl_ulong duration = 0;
-#endif // BS_PRINT_DURATION
         std::vector<cl::Event> events;
+        events.reserve(1024);
 
         local_bsort.setArg(0, glob_buf);
         local_bsort.setArg(1, cur_stage);
@@ -220,14 +198,6 @@ public:
         local_bsort.setArg(3, static_cast<unsigned>(incr_order));
 
         execute_kernel(local_bsort, glob_size, loc_size, events);
-
-        events.back().wait();
-
-#ifdef BS_PRINT_DURATION
-        count_time(events, &duration);
-#endif // BS_PRINT_DURATION
-
-        events.clear();
 
         for (; cur_stage < pair_amount; ++cur_stage)
         {
@@ -242,20 +212,32 @@ public:
             }
         }
 
-        for (auto &&evnt : events)
-            evnt.wait();
 
-#ifdef BS_PRINT_DURATION
-        count_time(events, &duration);
-#endif // BS_PRINT_DURATION
+        for (auto& e : events)
+            e.wait();
 
+        count_time(events, &gpu_event_ns);
+
+        // readback
         cl::copy(queue_, glob_buf, vec.begin(), vec.end());
-
-#ifdef BS_PRINT_DURATION
-        std::cout << "GPU Duration: " << duration << " nanosec\n";
-#endif
+        queue_.finish();
 
         vec.resize(old_size);
+
+        const auto wall_end = clock::now();
+        gpu_wall_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
+    }
+
+    void bsort(std::vector<int> &vec, bool incr_order)
+    {
+        cl_ulong  event_ns = 0;
+        long long wall_ns  = 0;
+        bsort_timed(vec, incr_order, event_ns, wall_ns);
+
+#ifdef BS_PRINT_DURATION
+        std::cout << "GPU Duration (event): " << event_ns << " nanosec\n";
+        std::cout << "GPU Duration (wall): "  << wall_ns  << " nanosec\n";
+#endif
     }
 };
 
