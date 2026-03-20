@@ -5,7 +5,7 @@
 Результат работы Bitonic Sort на GPU дерева сравнивается в результатом работы std::sort на CPU.
 
 ## Запуск проекта
-```
+```bash
 git clone https://github.com/MaxGud10/BitonicSort
 cd BitonicSort
 mkdir build
@@ -45,13 +45,13 @@ cmake --build build
 - **GPU_wall_ns** - общее wall-time выполнения
 
 ### Запуск
-```
+```bash
 ./build/bitonic_gpu_bench < unit_tests/data/common/test_1000.dat
 ```
 ## `CPU benchmark`
 
 ### Запуск
-```
+```bash
 ./build/bitonic_cpu_bench < unit_tests/data/common/test_1000.dat
 ```
 
