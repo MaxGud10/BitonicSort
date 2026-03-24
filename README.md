@@ -28,7 +28,7 @@ cmake -S ./ -B build/ -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 ### `Запуск`
-```
+```bash
 ./build/bitonic_sort < unit_tests/data/common/test_1000.dat
 ```
 
@@ -55,6 +55,28 @@ cmake --build build
 ./build/bitonic_cpu_bench < unit_tests/data/common/test_1000.dat
 ```
 
+# Уровень 2 — Multi Match
+
+## Описание
+
+Для одной длинной строки и набора подстрок программа должна посчитать,
+сколько раз каждая подстрока входит в исходную строку.
+
+### Запуск
+
+```
+./build/multi_match < unit_tests/data/multi_match/common/test_1000.dat
+```
+### benchmark
+```
+./build/multi_match_cpu_bench < unit_tests/data/multi_match/common/test_1000.dat
+```
+
+или
+
+```
+./build/multi_match_gpu_bench < unit_tests/data/multi_match/common/test_1000.dat
+```
 
 ### Запуск примера основной программы
 
