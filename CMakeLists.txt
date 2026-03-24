@@ -163,27 +163,27 @@ target_compile_definitions(multi_match_lib INTERFACE
 
 
 add_executable(bitonic_sort
-    src/main.cpp
+    src/bitonic/main.cpp
 )
 
 add_executable(bitonic_gpu_bench
-    src/bench_gpu.cpp
+    src/bitonic/bench_gpu.cpp
 )
 
 add_executable(bitonic_cpu_bench
-    src/bench_cpu.cpp
+    src/bitonic/bench_cpu.cpp
 )
 
 add_executable(multi_match
-    src/multi_match_main.cpp
+    src/multi_match/main.cpp
 )
 
 add_executable(multi_match_gpu_bench
-    src/multi_match_bench_gpu.cpp
+    src/multi_match/multi_match_bench_gpu.cpp
 )
 
 add_executable(multi_match_cpu_bench
-    src/multi_match_bench_cpu.cpp
+    src/multi_match/multi_match_bench_cpu.cpp
 )
 
 foreach(tgt IN ITEMS bitonic_sort bitonic_gpu_bench)
