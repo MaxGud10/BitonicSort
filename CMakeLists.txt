@@ -51,12 +51,15 @@ else()
 endif()
 
 # set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Build type")
-add_subdirectory(unit_tests/)
+
 
 configure_file(${CMAKE_SOURCE_DIR}/kernels/bitonic_sort.cl
                ${CMAKE_BINARY_DIR}/bitonic_sort.cl
                COPYONLY)
 
+configure_file(${CMAKE_SOURCE_DIR}/kernels/multi_match.cl
+               ${CMAKE_BINARY_DIR}/multi_match.cl
+               COPYONLY)
 
 if(MSVC)
     set(RELEASE_COMPILE_OPTIONS /O2 /W4 /DNDEBUG)
@@ -142,6 +145,22 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     )
 endif()
 
+add_library(multi_match_lib INTERFACE)
+
+target_include_directories(multi_match_lib INTERFACE
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/utils
+)
+
+target_link_libraries(multi_match_lib INTERFACE
+  OpenCL::OpenCL
+  OpenCLHeadersCpp
+)
+
+target_compile_definitions(multi_match_lib INTERFACE
+  MULTI_MATCH_KERNEL_PATH="${CMAKE_BINARY_DIR}/multi_match.cl"
+)
+
 
 add_executable(bitonic_sort
     src/main.cpp
@@ -153,6 +172,18 @@ add_executable(bitonic_gpu_bench
 
 add_executable(bitonic_cpu_bench
     src/bench_cpu.cpp
+)
+
+add_executable(multi_match
+    src/multi_match_main.cpp
+)
+
+add_executable(multi_match_gpu_bench
+    src/multi_match_bench_gpu.cpp
+)
+
+add_executable(multi_match_cpu_bench
+    src/multi_match_bench_cpu.cpp
 )
 
 foreach(tgt IN ITEMS bitonic_sort bitonic_gpu_bench)
@@ -195,6 +226,37 @@ target_compile_definitions(bitonic_cpu_bench PRIVATE
 )
 
 
+target_link_libraries(multi_match PRIVATE multi_match_lib)
+target_link_libraries(multi_match_gpu_bench PRIVATE multi_match_lib)
+target_link_libraries(multi_match_cpu_bench PRIVATE multi_match_lib)
+
+target_compile_options(multi_match PRIVATE
+  $<$<CONFIG:Debug>:${DEBUG_COMPILE_OPTIONS}>
+  $<$<CONFIG:Release>:${RELEASE_COMPILE_OPTIONS}>
+)
+
+target_compile_options(multi_match_gpu_bench PRIVATE
+  $<$<CONFIG:Debug>:${DEBUG_COMPILE_OPTIONS}>
+  $<$<CONFIG:Release>:${RELEASE_COMPILE_OPTIONS}>
+)
+
+target_compile_options(multi_match_cpu_bench PRIVATE
+  $<$<CONFIG:Debug>:${DEBUG_COMPILE_OPTIONS}>
+  $<$<CONFIG:Release>:${RELEASE_COMPILE_OPTIONS}>
+)
+
+target_compile_definitions(multi_match PRIVATE
+  $<$<CONFIG:Debug>:DEBUG>
+)
+
+target_compile_definitions(multi_match_gpu_bench PRIVATE
+  $<$<CONFIG:Debug>:DEBUG>
+)
+
+target_compile_definitions(multi_match_cpu_bench PRIVATE
+  $<$<CONFIG:Debug>:DEBUG>
+)
+
 
 if(BS_LOG)
     target_compile_definitions(bitonic_sort PRIVATE BS_LOG)
@@ -216,3 +278,5 @@ endif()
 target_compile_definitions(bitonic_sort PRIVATE
     $<$<CONFIG:Debug>:DEBUG>
 )
+
+add_subdirectory(unit_tests/)

@@ -7,7 +7,7 @@ FetchContent_Declare(
 )
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
-  
+
 
 add_executable(unit_tests
   src/unit_tests.cpp
@@ -23,18 +23,21 @@ target_compile_definitions(unit_tests PRIVATE
   BITONIC_KERNEL_PATH="${CMAKE_BINARY_DIR}/bitonic_sort.cl"
 )
 
+target_compile_definitions(unit_tests PRIVATE
+  MULTI_MATCH_KERNEL_PATH="${CMAKE_BINARY_DIR}/multi_match.cl"
+)
+
 target_include_directories(unit_tests PRIVATE
   ${CMAKE_SOURCE_DIR}/unit_tests/test_utils/include
   ${CMAKE_SOURCE_DIR}/include
-  ${CMAKE_SOURCE_DIR}/include/detail
   ${CMAKE_SOURCE_DIR}/utils
 )
 
 target_link_libraries(unit_tests PRIVATE
   GTest::gtest
-  GTest::gtest_main
   OpenCL::OpenCL
   OpenCLHeadersCpp
+  multi_match_lib
 )
 
 if(BS_DUMP)

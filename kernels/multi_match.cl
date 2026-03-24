@@ -1,9 +1,9 @@
-__kernel void multi_match_count(__global const uchar* text,
-                                uint                 text_size,
-                                __global const int*  transitions,
-                                __global const uint* out_offsets,
-                                __global const uint* out_pattern_ids,
-                                volatile __global uint* counts)
+__kernel void multi_match_count(__global const uchar   *text,
+                                uint                    text_size,
+                                __global const int     *transitions,
+                                __global const uint    *out_offsets,
+                                __global const uint    *out_pattern_ids,
+                                volatile __global uint *counts)
 {
     const uint start_pos = get_global_id(0);
 
