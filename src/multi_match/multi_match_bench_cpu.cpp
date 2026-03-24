@@ -14,7 +14,7 @@ try
     bitonic::multi_match::cpu::CpuMatcher matcher;
 
     const auto start = std::chrono::steady_clock::now();
-    const bitonic::multi_match::MatchResult result = matcher.match_reference(task);
+    const bitonic::multi_match::MatchResult result = matcher.match_fast(task);
     const auto end   = std::chrono::steady_clock::now();
 
     const auto ns =

@@ -93,15 +93,15 @@ private:
             for (std::size_t i = 0; i < pat.size(); ++i)
             {
                 const unsigned char ch = static_cast<unsigned char>(pat[i]);
-                int &next_state = nodes_[static_cast<std::size_t>(state)].next_[ch];
 
-                if (next_state == -1)
+                if (nodes_[static_cast<std::size_t>(state)].next_[ch] == -1)
                 {
-                    next_state = static_cast<int>(nodes_.size());
+                    const int new_state = static_cast<int>(nodes_.size());
+                    nodes_[static_cast<std::size_t>(state)].next_[ch] = new_state;
                     nodes_.push_back(AhoNode{});
                 }
 
-                state = next_state;
+                state = nodes_[static_cast<std::size_t>(state)].next_[ch];
             }
 
             nodes_[static_cast<std::size_t>(state)].out_.push_back(

@@ -109,15 +109,14 @@ public:
             for (std::size_t i = 0; i < pat.size(); ++i)
             {
                 const unsigned char ch = static_cast<unsigned char>(pat[i]);
-                int &to = nodes[static_cast<std::size_t>(state)].next_[ch];
-
-                if (to == -1)
+                if (nodes[static_cast<std::size_t>(state)].next_[ch] == -1)
                 {
-                    to = static_cast<int>(nodes.size());
+                    const int new_state = static_cast<int>(nodes.size());
+                    nodes[static_cast<std::size_t>(state)].next_[ch] = new_state;
                     nodes.push_back(TrieNode{});
                 }
 
-                state = to;
+                state = nodes[static_cast<std::size_t>(state)].next_[ch];
             }
 
             nodes[static_cast<std::size_t>(state)].out_.push_back(pat_id);
