@@ -4,7 +4,7 @@
 #include "multi_match_gpu.h"
 
 int main()
-try
+try // TODO: сделать нормальное README
 {
     const bitonic::multi_match::TaskData task =
         bitonic::multi_match::TaskIo::read(std::cin);

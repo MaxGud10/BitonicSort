@@ -18,6 +18,7 @@
 #endif
 
 #define CL_HPP_ENABLE_EXCEPTIONS
+
 #include <CL/opencl.hpp>
 
 namespace bitonic
@@ -175,6 +176,9 @@ private:
             std::vector<cl::Device> devices;
             platforms[p].getDevices(CL_DEVICE_TYPE_GPU, &devices);
 
+            if (devices.empty())
+                platforms[p].getDevices(CL_DEVICE_TYPE_CPU, &devices);
+
             for (std::size_t d = 0; d < devices.size(); ++d)
             {
                 const bool ok =
@@ -189,7 +193,7 @@ private:
             }
         }
 
-        throw std::runtime_error("No suitable GPU OpenCL device found");
+        throw std::runtime_error("No suitable OpenCL device found");
     }
 
     void load_kernels(const std::string &file_name)
